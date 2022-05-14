@@ -1,0 +1,8 @@
+1) [WebGazer/www/] npm run serve
+2) node cors.js
+
+
+
+
+
+
