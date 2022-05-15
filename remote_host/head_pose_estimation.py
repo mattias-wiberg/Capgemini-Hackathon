@@ -4,12 +4,38 @@ Created on Fri Jul 31 03:00:36 2020
 
 @author: hp
 """
+import keyboard
 import requests
 import cv2
 import numpy as np
 import math
 from face_detector import get_face_detector, find_faces
 from face_landmarks import get_landmark_model, detect_marks
+
+class Motor():
+    def __init__(self, up_step, down_step, left_step, right_step) -> None:
+        self.horizontal = 0
+        self.vertical = 0
+        self.up_step = up_step
+        self.down_step = down_step
+        self.left_step = left_step
+        self.right_step = right_step
+
+    def up(self):
+        if self.vertical < 1:
+            self.vertical += self.up_step
+
+    def down(self):
+        if self.vertical > -1:
+            self.vertical -= self.down_step
+    
+    def right(self):
+        if self.horizontal < 1:
+            self.horizontal += self.right_step
+    
+    def left(self):
+        if self.horizontal > -1:
+            self.horizontal -= self.left_step
 
 def get_2d_points(img, rotation_vector, translation_vector, camera_matrix, val):
     """Return the 3D points present as 2D for making annotation box"""
@@ -126,7 +152,7 @@ def head_pose_points(img, rotation_vector, translation_vector, camera_matrix):
     
 face_model = get_face_detector()
 landmark_model = get_landmark_model()
-cap = cv2.VideoCapture(4)
+cap = cv2.VideoCapture(0)
 ret, img = cap.read()
 size = img.shape
 font = cv2.FONT_HERSHEY_SIMPLEX 
@@ -148,6 +174,10 @@ camera_matrix = np.array(
                          [0, focal_length, center[1]],
                          [0, 0, 1]], dtype = "double"
                          )
+step = 0.1
+
+motor = Motor(step, step, 2*step, 2*step)
+
 while True:
     ret, img = cap.read()
     if ret == True:
@@ -181,21 +211,22 @@ while True:
             x1, x2 = head_pose_points(img, rotation_vector, translation_vector, camera_matrix)
 
             cv2.line(img, p1, p2, (0, 255, 255), 2)
+            cv2.circle(img, p2, 5, (0, 0, 255), -1)
             cv2.line(img, tuple(x1), tuple(x2), (255, 255, 0), 2)
             # for (x, y) in marks:
             #     cv2.circle(img, (x, y), 4, (255, 255, 0), -1)
             # cv2.putText(img, str(p1), p1, font, 1, (0, 255, 255), 1)
             try:
                 m = (p2[1] - p1[1])/(p2[0] - p1[0])
-                ang1 = int(math.degrees(math.atan(m)))
+                vertical = int(math.degrees(math.atan(m)))
             except:
-                ang1 = 90
+                vertical = 90
                 
             try:
                 m = (x2[1] - x1[1])/(x2[0] - x1[0])
-                ang2 = int(math.degrees(math.atan(-1/m)))
+                horizontal = int(math.degrees(math.atan(-1/m)))
             except:
-                ang2 = 90
+                horizontal = 90
                 
                 # print('div by zero error')
             """
@@ -219,24 +250,37 @@ while True:
             # right: positive
             # up: positive
             # down: negative
-            # vertical: ang1
-            # horizontal: ang2
-            OFFSET = 32
-            DEADBAND = 15
+            vert_diff = p1[1] - p2[1] # Pinocchio nose center to tip difference
+            horz_diff = p1[0] - p2[0] # Pinocchio nose center to tip difference
+            HORZ_OFFSET = 32
+            HORZ_DEADBAND = 200
+            VERT_DEADBAND = 35
 
-            if ang2 < 0:
-                ang2 += OFFSET
-            elif ang2 > 0:
-                ang2 -= OFFSET
+            if horizontal < 0:
+                horizontal += HORZ_OFFSET
+            elif horizontal > 0:
+                horizontal -= HORZ_OFFSET
 
-            if abs(ang2) >= DEADBAND:
-                myobj = {'vertical': 0,
-                    'horizontal': str(np.sign(ang2))}
-                #response_from_office = requests.post('http://192.168.20.237:8090', json = myobj, timeout=2.50)
+            if abs(horz_diff) >= HORZ_DEADBAND:
+                if horz_diff > 0:
+                    motor.right()
+                elif horz_diff < 0:
+                    motor.left()
+            
+            if abs(vert_diff) >= VERT_DEADBAND:
+                if vert_diff > 0:
+                    motor.up()
+                elif vert_diff < 0:
+                    motor.down()
+
+            myobj = {'vertical': str(motor.vertical),
+                'horizontal': str(motor.horizontal)}
+            #print(myobj)
+            response_from_office = requests.post('http://192.168.20.237:8090', json = myobj, timeout=2.50)
             #### TO BE COMPLETED BY STUDENT ####
             
-            cv2.putText(img, str(ang1), tuple(p1), font, 2, (128, 255, 255), 3)
-            cv2.putText(img, str(ang2), tuple(x1), font, 2, (255, 255, 128), 3)
+            cv2.putText(img, str(motor.vertical), tuple(p1), font, 2, (128, 255, 255), 3)
+            cv2.putText(img, str(motor.horizontal), tuple(x1), font, 2, (255, 255, 128), 3)
         cv2.imshow('img', img)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
