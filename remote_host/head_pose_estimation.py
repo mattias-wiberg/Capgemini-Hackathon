@@ -5,23 +5,11 @@ Created on Fri Jul 31 03:00:36 2020
 @author: hp
 """
 import requests
-from torch import sgn
-import keyboard
 import cv2
 import numpy as np
 import math
 from face_detector import get_face_detector, find_faces
 from face_landmarks import get_landmark_model, detect_marks
-
-# CALIBRATION CONSTANTS
-left_left = 0
-left = 0
-right_right = 0
-right = 0
-up_up = 0
-up = 0
-down_down = 0
-down = 0
 
 def get_2d_points(img, rotation_vector, translation_vector, camera_matrix, val):
     """Return the 3D points present as 2D for making annotation box"""
@@ -226,105 +214,26 @@ while True:
                 cv2.putText(img, 'Head left', (90, 30), font, 2, (255, 255, 128), 3)
             """
 
-            # TO BE COMPLETED BY STUDENT
-            # TODO: cuda?
-            vertical = ang1
-            horizontal = ang2
-            # CALIBRATION
-            if keyboard.is_pressed('l'):
-                left_left = horizontal 
-                print(f'left_left={left_left}')
-            elif keyboard.is_pressed('ö'):
-                left = horizontal 
-                print(f'left={left}')
-            elif keyboard.is_pressed('r'):
-                right_right = horizontal
-                print(f'right_right={right_right}')
-            elif keyboard.is_pressed('e'):
-                right = horizontal
-                print(f'right={right}')
-            elif keyboard.is_pressed('u'):
-                up_up = vertical
-                print(f'up_up={up_up}')
-            elif keyboard.is_pressed('j'):
-                up = vertical
-                print(f'up={up}')
-            elif keyboard.is_pressed('d'):
-                down_down = vertical
-                print(f'down_down={down_down}')
-            elif keyboard.is_pressed('w'):
-                down = vertical
-                print(f'down={down}')
-
+            #### TO BE COMPLETED BY STUDENT ####
             # left: negative
             # right: positive
             # up: positive
             # down: negative
+            # vertical: ang1
+            # horizontal: ang2
+            OFFSET = 32
+            DEADBAND = 15
 
-            """
-            if horizontal < 0:
-                horizontal += 32
-            elif horizontal > 0:
-                horizontal -= 32
-            """
             if ang2 < 0:
-                ang2 += 32
+                ang2 += OFFSET
             elif ang2 > 0:
-                ang2 -= 32
+                ang2 -= OFFSET
 
-            if abs(ang2) >= 15:
+            if abs(ang2) >= DEADBAND:
                 myobj = {'vertical': 0,
                     'horizontal': str(np.sign(ang2))}
-                response_from_office = requests.post('http://192.168.20.237:8090', json = myobj, timeout=2.50)
-            
-            """else:
-                myobj = {'vertical': 0,
-                    'horizontal': str(np.sign(ang2))}
-                response_from_office = requests.post('http://192.168.20.237:8090', json = myobj, timeout=2.50)
-                print(str(np.sign(ang2)))"""
-
-            """
-            if horizontal <= left_left:
-                print("left")
-            elif horizontal >= right_right:
-                print("right") 
-            else:
-                print("horizontal: middle")
-            """
-
-            """
-            if down_down >= vertical:
-                print("down")
-            elif up_up <= vertical:
-                print("up")
-            else:
-                print("vertical: middle")
-            """
-
-            """
-            if left_left <= horizontal <= left:
-                print("left")
-            elif right >= horizontal >= right_right:
-                print("right")
-            else:
-                print("horizontal: middle")
-
-
-            if down <= vertical <= down_down:
-                print("down")
-            elif up >= vertical >= up_up:
-                print("up")
-            else:
-                print("vertical: middle")
-            """
-
-            """myobj = {'vertical': ang1,
-                    'horizontal': ang2}
-            response_from_office = requests.post('http://10.39.6.18:8081', json = myobj, timeout=2.50)"""
-
-            # MOTOR WILL KEEP THE POSITION
-            
-            # TO BE COMPLETED BY STUDENT
+                #response_from_office = requests.post('http://192.168.20.237:8090', json = myobj, timeout=2.50)
+            #### TO BE COMPLETED BY STUDENT ####
             
             cv2.putText(img, str(ang1), tuple(p1), font, 2, (128, 255, 255), 3)
             cv2.putText(img, str(ang2), tuple(x1), font, 2, (255, 255, 128), 3)
